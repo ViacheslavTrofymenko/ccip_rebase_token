@@ -1,9 +1,10 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity 0.8.30;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {IRebaseToken} from "./interfaces/IRebaseToken.sol";
 /**
  * @title RebaseToken
  * @author VT
@@ -12,15 +13,15 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
  * @notice Each user will have thir own interest rate is the global interest rate in the time of depositing.
  * @dev This contract is an ERC20 token that is used to represent the Rebase Token.
  **/
-contract RebaseToken is ERC20, Ownable, AccessControl {
+contract RebaseToken is IRebaseToken, ERC20, Ownable, AccessControl {
     error RebaseToken__InterestRateCanOnlyDecrease(
         uint256 oldInterestRate,
         uint256 newInterestRate
     );
 
-    uint256 private constant PRECISION_FACTOR = 1e18;
+    uint256 private constant PRECISION_FACTOR = 1e27;
 	bytes32 private constant MINT_AND_BURN_ROLE = keccak256("MINT_AND_BURN_ROLE");
-    uint256 private s_interestRate = 5e10;
+    uint256 private s_interestRate = (5 * PRECISION_FACTOR) / 1e8;
     mapping(address user => uint256) private s_userInterestRate;
     mapping(address user => uint256) private s_userLastUpdatedTimestamp;
 
@@ -33,9 +34,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
 	}
 
     /**
-     * @notice Set interest rate in the contract
-     * @param _newInterestRate The new interest rate to set
-     * @dev The interest rate can only decrease
+     * @inheritdoc IRebaseToken
      */
     function setInterestRate(uint256 _newInterestRate) external onlyOwner {
         if (_newInterestRate < s_interestRate) {
@@ -49,17 +48,14 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
 	 /**
-     * @notice Get interest rate for the contract
-     * @return The interest rate for the contract
+     * @inheritdoc IRebaseToken
      */
     function getInterestRate() external view returns (uint256) {
         return s_interestRate;
     }
 
     /**
-     * @notice Get the interest rate for the user
-     * @param _user The user to get the interest rate for
-     * @return The interest rate for the user
+     * @inheritdoc IRebaseToken
      */
     function getUserInterestRate(
         address _user
@@ -68,19 +64,14 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     /**
-     * @notice GEt the principle balance of a user. This is the number of tokens that have currently been minted to the user.
-     * @notice Not including any interest that has accrued since the last time the user interacted with the protocol.
-     * @param _user The user to get the principle balance for
-     * @return The principle balance of the user
+     * @inheritdoc IRebaseToken
      */
     function principleBalanceOf(address _user) external view returns (uint256) {
         return super.balanceOf(_user);
     }
 
     /**
-     * @notice Mint the user tokens when they deposit into the vault
-     * @param _to The user to mint the tokens to
-     * @param _amount The amount of tokens to mint
+     * @inheritdoc IRebaseToken
      */
     function mint(address _to, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
         _mintAccuredInterest(_to);
@@ -89,9 +80,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     /**
-     * @notice Burn the user tokens when they withdraw from the vault
-     * @param _from The user to burn the tokens from
-     * @param _amount The amount of tokens to burn
+     * @inheritdoc IRebaseToken
      */
     function burn(address _from, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
         if (_amount == type(uint256).max) {
@@ -102,11 +91,9 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     /**
-     * @notice Calculate the balance for the user including the interest that has accumulated since last update
-     * @param _user The user to calculate balance for
-     * @return The balance of the user
+     * @inheritdoc IRebaseToken
      */
-    function balanceOf(address _user) public view override returns (uint256) {
+    function balanceOf(address _user) public view override(ERC20, IRebaseToken) returns (uint256) {
         // get the current principle balance of the user
         // multiply the principle balance by interest rate of the user
         return
@@ -116,15 +103,12 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     /**
-     * @notice Transfer tokens from one user to another
-     * @param _recipient The user to transfer the tokens to.
-     * @param _amount The amount of tokens to transfer
-     * @return True if the transfer was successful
+     * @inheritdoc IRebaseToken
      */
     function transfer(
         address _recipient,
         uint256 _amount
-    ) public override returns (bool) {
+    ) public override(ERC20, IRebaseToken) returns (bool) {
         _mintAccuredInterest(msg.sender);
         _mintAccuredInterest(_recipient);
         if (_amount == type(uint256).max) {
@@ -147,7 +131,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         address _sender,
         address _recipient,
         uint256 _amount
-    ) public override returns (bool) {
+    ) public override(ERC20, IRebaseToken) returns (bool) {
         _mintAccuredInterest(_sender);
         _mintAccuredInterest(_recipient);
         if (_amount == type(uint256).max) {
