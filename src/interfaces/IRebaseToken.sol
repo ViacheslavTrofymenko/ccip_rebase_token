@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.24;
 
 interface IRebaseToken {
 	function grantMintAndBurnRole(address _account) external;
@@ -38,8 +38,9 @@ interface IRebaseToken {
      * @notice Mint the user tokens when they deposit into the vault
      * @param _to The user to mint the tokens to
      * @param _amount The amount of tokens to mint
+     * @param _interestRate The interest rate
      */
-    function mint(address _to, uint256 _amount) external;
+    function mint(address _to, uint256 _amount, uint256 _interestRate) external;
 
 	/**
      * @notice Burn the user tokens when they withdraw from the vault

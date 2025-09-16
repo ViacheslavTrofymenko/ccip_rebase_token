@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -12,7 +12,7 @@ contract RebaseTokenTest is Test {
     RebaseToken private rebaseToken;
     Vault private vault;
 
-    uint256 public constant interestRate = 4e10;
+    uint256 public constant INTEREST_RATE = 4e10;
 
     address public owner = makeAddr("owner");
     address public user = makeAddr("user");
@@ -111,10 +111,11 @@ contract RebaseTokenTest is Test {
         assertEq(user2Balance, 0);
 
         vm.prank(owner);
-        rebaseToken.setInterestRate(interestRate);
+        rebaseToken.setInterestRate(INTEREST_RATE);
 
         vm.prank(user);
-        rebaseToken.transfer(user2, amountToSend);
+        bool success = rebaseToken.transfer(user2, amountToSend);
+        if (!success) revert Is_Not_Success();
         uint256 userBalanceAfterTransfer = rebaseToken.balanceOf(user);
         uint256 user2BalanceAfterTransfer = rebaseToken.balanceOf(user2);
         assertEq(userBalanceAfterTransfer, userBalance - amountToSend);
@@ -151,9 +152,10 @@ contract RebaseTokenTest is Test {
 
     function testCannotCallMintAndBurn() public {
         uint256 amount = 1e15;
+        uint256 _interestRate = rebaseToken.getInterestRate();
         vm.prank(user);
         vm.expectRevert();
-        rebaseToken.mint(user, amount);
+        rebaseToken.mint(user, amount, _interestRate);
 
         vm.prank(user);
         vm.expectRevert();
