@@ -2,11 +2,12 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-rpc_endpoints = {sepolia-eth = "", arb-sepolia = ""}
+rpc_endpoints = {sepolia = "${ETH_RPC_URL}", arb-sepolia = "${ARB_RPC_URL}"}
 
 remappings = [
 	'@openzeppelin/=lib/openzeppelin-contracts/',
-	'@ccip/=lib/ccip/'
+	'@ccip/=lib/ccip/',
+	'@chainlink/local/=lib/chainlink-local/'
 ]
 
 [lint]
